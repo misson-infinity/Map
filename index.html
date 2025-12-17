@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>3D Open World - GTA Style</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #ui {
+            position: absolute; bottom: 20px; left: 20px; color: white;
+            background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px;
+            font-family: 'Segoe UI', sans-serif; pointer-events: none;
+        }
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
+            background: white; border-radius: 50%; transform: translate(-50%, -50%);
+            border: 1px solid black; opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <b>Controls:</b><br>
+        W, A, S, D - Move/Drive<br>
+        F - Enter/Exit Rickshaw<br>
+        Mouse - Look around
+    </div>
+    <div id="crosshair"></div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        let scene, camera, renderer, controls, loader;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let velocity = new THREE.Vector3();
+        let direction = new THREE.Vector3();
+        let prevTime = performance.now();
+
+        // Game Objects
+        let map, player, rickshaw;
+        let isDriving = false;
+
+        const ASSETS = {
+            map: './assets/map/scene.gltf',
+            rickshaw: './assets/rickshaw/scene.gltf',
+            man: './assets/man/scene.gltf'
+        };
+
+        init();
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xaaccff); // আকাশী রং
+            
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            // লাইটিং (Lighting)
+            const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+            sun.position.set(100, 200, 100);
+            scene.add(sun);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+
+            loader = new GLTFLoader();
+
+            // ১. ম্যাপ লোড করা
+            loader.load(ASSETS.map, (gltf) => {
+                map = gltf.scene;
+                scene.add(map);
+                console.log("Map Loaded");
+            });
+
+            // ২. রিকশা লোড করা
+            loader.load(ASSETS.rickshaw, (gltf) => {
+                rickshaw = gltf.scene;
+                rickshaw.position.set(5, 0, -10); // ম্যাপ অনুযায়ী পজিশন ঠিক করুন
+                scene.add(rickshaw);
+            });
+
+            // ৩. প্লেয়ার (মানুষ) লোড
+            loader.load(ASSETS.man, (gltf) => {
+                player = gltf.scene;
+                player.visible = false; // ১ম পারসন ভিউতে মানুষটি লুকানো থাকবে
+                scene.add(player);
+            });
+
+            controls = new PointerLockControls(camera, document.body);
+            document.addEventListener('click', () => controls.lock());
+
+            window.addEventListener('keydown', (e) => handleKey(e.code, true));
+            window.addEventListener('keyup', (e) => handleKey(e.code, false));
+            
+            animate();
+        }
+
+        function handleKey(code, isPressed) {
+            switch (code) {
+                case 'KeyW': moveForward = isPressed; break;
+                case 'KeyS': moveBackward = isPressed; break;
+                case 'KeyA': moveLeft = isPressed; break;
+                case 'KeyD': moveRight = isPressed; break;
+                case 'KeyF': if(isPressed) toggleDrive(); break;
+            }
+        }
+
+        function toggleDrive() {
+            if (!rickshaw) return;
+            const distance = camera.position.distanceTo(rickshaw.position);
+
+            if (!isDriving && distance < 8) {
+                // রিকশায় উঠা
+                isDriving = true;
+                player.visible = true;
+                rickshaw.add(player); // রিকশার চাইল্ড হিসেবে প্লেয়ারকে যোগ করা
+                player.position.set(0, 0.5, 0.2); // সিটে বসার পজিশন (চেক করে ঠিক করবেন)
+                
+                rickshaw.add(camera); // ক্যামেরাও রিকশার সাথে ঘুরবে
+                camera.position.set(0, 1.8, 0); 
+            } else if (isDriving) {
+                // রিকশা থেকে নামা
+                isDriving = false;
+                player.visible = false;
+                scene.add(camera);
+                scene.add(player);
+                camera.position.y = 1.6;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now();
+            const delta = (time - prevTime) / 1000;
+
+            if (controls.isLocked) {
+                if (!isDriving) {
+                    // সাধারণ হাঁটাচলা (First Person)
+                    velocity.x -= velocity.x * 10.0 * delta;
+                    velocity.z -= velocity.z * 10.0 * delta;
+
+                    direction.z = Number(moveForward) - Number(moveBackward);
+                    direction.x = Number(moveRight) - Number(moveLeft);
+                    direction.normalize();
+
+                    if (moveForward || moveBackward) velocity.z -= direction.z * 100.0 * delta;
+                    if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta;
+
+                    controls.moveRight(-velocity.x * delta);
+                    controls.moveForward(-velocity.z * delta);
+                } else {
+                    // রিকশা চালানো
+                    const driveSpeed = 20 * delta;
+                    const rotateSpeed = 1.5 * delta;
+
+                    if (moveForward) rickshaw.translateZ(driveSpeed);
+                    if (moveBackward) rickshaw.translateZ(-driveSpeed);
+                    if (moveLeft) rickshaw.rotation.y += rotateSpeed;
+                    if (moveRight) rickshaw.rotation.y -= rotateSpeed;
+                }
+            }
+
+            prevTime = time;
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

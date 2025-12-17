@@ -1,186 +1,1343 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>3D Open World - GTA Style</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BGC Campus Pro</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- PWA Manifest (Embedded via Data URI for Single File Solution) -->
+    <link rel="manifest" href='data:application/manifest+json,{"name":"BGC Campus Pro","short_name":"BGC Campus","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#008080","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/2995/2995458.png","sizes":"192x192","type":"image/png"},{"src":"https://cdn-icons-png.flaticon.com/512/2995/2995458.png","sizes":"512x512","type":"image/png"}]}'>
+
     <style>
-        body { margin: 0; overflow: hidden; }
-        #ui {
-            position: absolute; bottom: 20px; left: 20px; color: white;
-            background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px;
-            font-family: 'Segoe UI', sans-serif; pointer-events: none;
+        :root {
+            --primary: #008080; /* Teal */
+            --primary-dark: #006666;
+            --secondary: #eab308; /* Yellow */
+            --accent: #dc2626; /* Red */
+            --bg: #f0f2f5; 
+            --white: #ffffff;
+            --text-dark: #050505;
+            --text-light: #65676b;
+            --shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            --msg-sent: #008080;
+            --msg-received: #e4e6eb;
         }
-        #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 10px; height: 10px;
-            background: white; border-radius: 50%; transform: translate(-50%, -50%);
-            border: 1px solid black; opacity: 0.5;
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-dark);
+            padding-bottom: 70px;
         }
+
+        /* --- Utilities --- */
+        .hidden { display: none !important; }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #e4e6eb; color: var(--text-dark); }
+        .btn-danger { background: var(--accent); color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 0.85rem; width: auto; }
+        
+        .card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            font-family: inherit;
+            background: #f5f6f7;
+        }
+
+        /* --- Layout --- */
+        #app { max-width: 550px; margin: 0 auto; min-height: 100vh; position: relative; background: var(--bg); }
+
+        /* Header */
+        header {
+            background: var(--white);
+            padding: 10px 15px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .brand { font-weight: 700; font-size: 1.4rem; color: var(--primary); letter-spacing: -0.5px; }
+        .brand span { color: var(--secondary); }
+
+        /* Auth Screen */
+        #view-auth {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100vh;
+            padding: 20px;
+            background: white;
+        }
+
+        /* --- Post Styling --- */
+        .post-header { display: flex; align-items: flex-start; margin-bottom: 10px; }
+        .avatar { 
+            width: 40px; height: 40px; 
+            border-radius: 50%; 
+            background: #cfd0d1; 
+            margin-right: 10px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; color: white; overflow: hidden;
+            flex-shrink: 0;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .post-meta { flex: 1; }
+        .author-name { font-weight: 600; font-size: 0.95rem; color: var(--text-dark); cursor: pointer; }
+        .post-meta small { font-size: 0.75rem; color: var(--text-light); display: block; }
+        
+        .badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: #eee; margin-left: 5px; vertical-align: middle; }
+        .badge-Teacher { background: var(--secondary); color: black; }
+        .badge-Moderator { background: #3b82f6; color: white; }
+        .badge-Admin { background: var(--accent); color: white; }
+
+        /* Image Grid */
+        .img-grid {
+            display: grid;
+            gap: 2px;
+            margin-top: 10px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f0f2f5;
+        }
+        .img-grid img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+        .grid-1 { grid-template-columns: 1fr; height: auto; max-height: 400px; }
+        .grid-2 { grid-template-columns: 1fr 1fr; height: 250px; }
+        .grid-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: 350px; }
+        .grid-3 img:first-child { grid-row: span 2; }
+        .grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: 350px; }
+
+        .media-embed { margin-top: 10px; width: 100%; border-radius: 8px; overflow: hidden; background:black; }
+        
+        /* Stats & Actions */
+        .post-stats {
+            display: flex; justify-content: space-between;
+            padding: 10px 0; border-bottom: 1px solid #eee;
+            color: var(--text-light); font-size: 0.85rem;
+        }
+        .post-actions { 
+            margin-top: 5px; padding-top: 5px; 
+            display: flex; justify-content: space-around; 
+        }
+        .action-btn { 
+            background: none; border: none; color: var(--text-light); 
+            cursor: pointer; font-size: 0.9rem; padding: 8px; 
+            flex: 1; border-radius: 4px; 
+            display: flex; align-items: center; justify-content: center; gap: 5px; 
+        }
+        .action-btn:hover { background: #f0f2f5; }
+        .liked { color: var(--primary) !important; font-weight: 600; }
+
+        /* Comment Section */
+        .comment-section {
+            background: #f7f8fa; padding: 10px; border-radius: 8px; margin-top: 10px;
+        }
+        .comment-item { display: flex; gap: 8px; margin-bottom: 8px; }
+        .comment-bubble { background: #e4e6eb; padding: 6px 10px; border-radius: 12px; font-size: 0.9rem; }
+        .comment-input-area { display: flex; gap: 5px; margin-top: 5px; }
+
+        /* Fab */
+        .fab {
+            position: fixed; bottom: 80px; right: 20px;
+            background: var(--primary); color: white;
+            width: 56px; height: 56px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            cursor: pointer; z-index: 40;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 100;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: white; width: 95%; max-width: 500px; padding: 20px;
+            border-radius: 10px; max-height: 90vh; overflow-y: auto;
+            animation: popIn 0.2s ease;
+        }
+        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Bottom Nav */
+        nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--white); display: flex; justify-content: space-around;
+            padding: 10px 0; border-top: 1px solid #ddd; z-index: 40;
+        }
+        .nav-item { background: none; border: none; font-size: 1.4rem; color: var(--text-light); cursor: pointer; position: relative; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item.active::after { content: ''; position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 100%; height: 3px; background: var(--primary); }
+
+        /* Profile Styles */
+        .cover-photo {
+            height: 180px;
+            background: linear-gradient(135deg, var(--primary) 0%, #00b4db 100%);
+            position: relative;
+        }
+        .profile-container {
+            background: white;
+            padding-bottom: 15px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .profile-pic-wrapper {
+            width: 140px; height: 140px;
+            border-radius: 50%;
+            border: 4px solid white;
+            background: #eee;
+            margin: -80px auto 10px auto; 
+            position: relative;
+            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .profile-pic-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-pic-wrapper i { font-size: 3rem; color: #aaa; }
+        
+        .profile-main-info { text-align: center; padding: 0 20px; }
+        .profile-name { font-size: 1.8rem; font-weight: 700; color: var(--text-dark); margin-bottom: 2px; }
+        .profile-bio { color: var(--text-light); font-size: 1rem; margin-bottom: 10px; }
+        
+        .profile-details-section { padding: 10px 15px; }
+        .detail-card { margin-bottom: 15px; }
+        .detail-card h4 { font-size: 1.1rem; color: var(--text-dark); margin-bottom: 10px; border-bottom: 2px solid #f0f2f5; padding-bottom: 5px; }
+        .info-row { display: flex; margin-bottom: 8px; font-size: 0.95rem; color: #444; }
+        .info-icon { width: 25px; color: var(--text-light); text-align: center; margin-right: 10px; }
+
+        /* --- Department Section --- */
+        .dept-tabs { display: flex; background: white; border-bottom: 1px solid #ddd; overflow-x: auto; }
+        .dept-tab { flex: 1; padding: 15px; text-align: center; font-weight: 600; color: var(--text-light); cursor: pointer; white-space: nowrap; }
+        .dept-tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+        .dept-content-area { padding: 15px; }
+        
+        .dept-action-bar { padding: 10px; background: white; border-bottom: 1px solid #eee; display: flex; gap: 10px; justify-content: center; }
+
+        /* Chat */
+        .friend-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: white; margin-bottom: 2px; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+        #chat-window { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 200; display: flex; flex-direction: column; }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background: var(--bg); }
+        .message-bubble { max-width: 75%; padding: 8px 12px; border-radius: 18px; font-size: 0.95rem; word-wrap: break-word; }
+        .msg-me { align-self: flex-end; background: var(--msg-sent); color: white; }
+        .msg-them { align-self: flex-start; background: var(--msg-received); color: black; }
+        .chat-input-area { padding: 10px; display: flex; gap: 8px; border-top: 1px solid #eee; background: white; }
+
+        /* Admin User List */
+        .user-list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-bottom: 1px solid #eee; }
+        .user-list-info b { display: block; font-size: 0.95rem; }
+        .user-list-info span { font-size: 0.8rem; color: #777; }
+        
+        .btn-delete { position: absolute; top: 10px; right: 10px; color: var(--accent); background: none; border: none; cursor: pointer; font-size: 1rem; z-index: 10; }
+
+        /* --- Menu Grid --- */
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 15px; }
+        .menu-card { background: white; padding: 20px; border-radius: 10px; text-align: center; cursor: pointer; box-shadow: var(--shadow); transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .menu-card:active { transform: scale(0.98); }
+        .menu-card i { font-size: 2rem; color: var(--primary); }
+        .menu-card h4 { font-size: 1rem; margin: 0; }
+
+        /* Routine Table */
+        .routine-table { width: 100%; border-collapse: collapse; background: white; font-size: 0.9rem; }
+        .routine-table th, .routine-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .routine-table th { background: var(--primary); color: white; }
+
+        /* Event Card */
+        .event-date-box { background: var(--secondary); color: black; padding: 5px 10px; border-radius: 6px; text-align: center; font-weight: bold; width: 60px; margin-right: 15px; flex-shrink: 0; }
+        
+        /* Book Card */
+        .book-price { font-weight: bold; color: var(--primary); font-size: 1.1rem; }
+
     </style>
 </head>
 <body>
-    <div id="ui">
-        <b>Controls:</b><br>
-        W, A, S, D - Move/Drive<br>
-        F - Enter/Exit Rickshaw<br>
-        Mouse - Look around
+
+<div id="app">
+
+    <div id="view-auth">
+        <div style="text-align: center; margin-bottom: 40px;">
+            <i class="fas fa-graduation-cap" style="font-size: 3rem; color: var(--primary); margin-bottom: 10px;"></i>
+            <h1 class="brand" style="font-size: 2.5rem;">BGC <span>Campus</span></h1>
+            <p style="color: var(--text-light);">Connect, Share & Learn.</p>
+        </div>
+
+        <form id="login-form">
+            <input type="email" id="login-email" placeholder="Email or Phone" required>
+            <input type="password" id="login-pass" placeholder="Password" required>
+            <button type="submit" class="btn btn-primary" style="font-size: 1.1rem;">Log In</button>
+            <div style="margin-top: 15px; text-align: center;">
+                <span style="color: var(--primary); cursor: pointer; font-weight: 600;" onclick="toggleAuth('signup')">Create New Account</span>
+            </div>
+        </form>
+
+        <form id="signup-form" class="hidden">
+            <input type="text" id="sup-name" placeholder="Full Name" required>
+            <input type="email" id="sup-email" placeholder="Email Address" required>
+            <input type="password" id="sup-pass" placeholder="New Password" required>
+            <select id="sup-dept" required>
+                <option value="" disabled selected>Select Department</option>
+                <option value="BENGALI">BENGALI</option>
+                <option value="ENGLISH">ENGLISH</option>
+                <option value="HISTORY">HISTORY</option>
+                <option value="ISLAMIC HISTORY">ISLAMIC HISTORY</option>
+                <option value="PHILOSOPHY">PHILOSOPHY</option>
+                <option value="POLITICAL SCIENCE">POLITICAL SCIENCE</option>
+                <option value="ECONOMICS">ECONOMICS</option>
+                <option value="ACCOUNTING">ACCOUNTING</option>
+                <option value="MANAGEMENT">MANAGEMENT</option>
+                <option value="PHYSICS">PHYSICS</option>
+                <option value="CHEMISTRY">CHEMISTRY</option>
+                <option value="BOTANY">BOTANY</option>
+                <option value="ZOOLOGY">ZOOLOGY</option>
+                <option value="MATHEMATICS">MATHEMATICS</option>
+                <option value="HSC 1st Year">HSC 1st Year</option>
+                <option value="HSC 2nd Year">HSC 2nd Year</option>
+            </select>
+            <input type="number" id="sup-year" placeholder="Session / HSC Year" required>
+            <button type="submit" class="btn btn-primary">Sign Up</button>
+            <div style="margin-top: 15px; text-align: center;">
+                <span style="color: var(--primary); cursor: pointer;" onclick="toggleAuth('login')">Already have an account?</span>
+            </div>
+        </form>
     </div>
-    <div id="crosshair"></div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+    <div id="main-interface" class="hidden">
+        
+        <header>
+            <div class="brand">BGC <span>Campus</span></div>
+            <div style="display: flex; gap: 15px;">
+                <i class="fas fa-bell" style="font-size: 1.2rem; color: var(--text-dark); cursor:pointer;" onclick="alert('Notification System Active')"></i>
+                <i class="fas fa-search" onclick="switchView('chat'); showChatTab('find')" style="font-size: 1.2rem; color: var(--text-dark); cursor:pointer;"></i>
+            </div>
+        </header>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+        <!-- Home View -->
+        <div id="view-home" class="view-content" style="padding-bottom: 20px;"></div>
 
-        let scene, camera, renderer, controls, loader;
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-        let velocity = new THREE.Vector3();
-        let direction = new THREE.Vector3();
-        let prevTime = performance.now();
-
-        // Game Objects
-        let map, player, rickshaw;
-        let isDriving = false;
-
-        const ASSETS = {
-            map: './assets/map/scene.gltf',
-            rickshaw: './assets/rickshaw/scene.gltf',
-            man: './assets/man/scene.gltf'
-        };
-
-        init();
-
-        function init() {
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xaaccff); // আকাশী রং
+        <!-- Department View -->
+        <div id="view-dept" class="view-content hidden" style="background: white; min-height: 90vh;">
+            <div style="padding: 20px; background: var(--primary); color: white;">
+                <h2 id="my-dept-name">Department</h2>
+                <p>Academic Hub</p>
+            </div>
             
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
-            
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            document.body.appendChild(renderer.domElement);
+            <div id="dept-admin-controls" class="dept-action-bar hidden">
+                <button class="btn btn-sm btn-secondary" onclick="openModal('add-note-modal')">
+                    <i class="fas fa-plus"></i> Add Note
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="openModal('add-exam-modal')">
+                    <i class="fas fa-calendar-plus"></i> Add Exam
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="openModal('add-routine-modal')">
+                    <i class="fas fa-clock"></i> Routine
+                </button>
+            </div>
 
-            // লাইটিং (Lighting)
-            const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-            sun.position.set(100, 200, 100);
-            scene.add(sun);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            <div class="dept-tabs">
+                <div class="dept-tab active" onclick="switchDeptTab('notices', this)">Notices</div>
+                <div class="dept-tab" onclick="switchDeptTab('notes', this)">Notes</div>
+                <div class="dept-tab" onclick="switchDeptTab('exams', this)">Exams</div>
+                <div class="dept-tab" onclick="switchDeptTab('routine', this)">Routine</div>
+            </div>
+            <div id="dept-content-area" class="dept-content-area"></div>
+        </div>
 
-            loader = new GLTFLoader();
+        <!-- Chat View -->
+        <div id="view-chat" class="view-content hidden">
+            <div style="padding: 10px; display: flex; gap: 10px;">
+                <button class="btn btn-sm btn-primary" onclick="showChatTab('friends')">Friends</button>
+                <button class="btn btn-sm btn-secondary" onclick="showChatTab('requests')">Requests</button>
+                <button class="btn btn-sm btn-secondary" onclick="showChatTab('find')">Find</button>
+            </div>
+            <div id="chat-content" style="margin-top: 5px;"></div>
+        </div>
 
-            // ১. ম্যাপ লোড করা
-            loader.load(ASSETS.map, (gltf) => {
-                map = gltf.scene;
-                scene.add(map);
-                console.log("Map Loaded");
-            });
+        <!-- More Menu View -->
+        <div id="view-more" class="view-content hidden" style="background: var(--bg); min-height: 100vh;">
+            <div style="padding: 15px;">
+                <h3 style="margin-bottom: 15px; color: var(--primary);">Campus Life</h3>
+                <div class="menu-grid">
+                    <div class="menu-card" onclick="switchView('market')">
+                        <i class="fas fa-book-open"></i>
+                        <h4>Book Market</h4>
+                    </div>
+                    <div class="menu-card" onclick="switchView('blood')">
+                        <i class="fas fa-hand-holding-heart" style="color: var(--accent);"></i>
+                        <h4>Blood Bank</h4>
+                    </div>
+                    <div class="menu-card" onclick="switchView('events')">
+                        <i class="fas fa-calendar-alt" style="color: var(--secondary);"></i>
+                        <h4>Events</h4>
+                    </div>
+                    <div class="menu-card" onclick="switchView('transport')">
+                        <i class="fas fa-bus"></i>
+                        <h4>Transport</h4>
+                    </div>
+                    <div class="menu-card hidden" id="menu-admin-btn" onclick="switchView('admin')">
+                        <i class="fas fa-shield-alt"></i>
+                        <h4>Admin Panel</h4>
+                    </div>
+                    <div class="menu-card" onclick="viewMyProfile()">
+                        <i class="fas fa-user-circle"></i>
+                        <h4>Profile</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-            // ২. রিকশা লোড করা
-            loader.load(ASSETS.rickshaw, (gltf) => {
-                rickshaw = gltf.scene;
-                rickshaw.position.set(5, 0, -10); // ম্যাপ অনুযায়ী পজিশন ঠিক করুন
-                scene.add(rickshaw);
-            });
+        <!-- Utility Views -->
+        <div id="view-market" class="view-content hidden" style="padding:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3>Book Exchange</h3>
+                <button class="btn btn-sm btn-primary" onclick="openModal('add-book-modal')"><i class="fas fa-plus"></i> Sell Book</button>
+            </div>
+            <div id="market-list"></div>
+        </div>
 
-            // ৩. প্লেয়ার (মানুষ) লোড
-            loader.load(ASSETS.man, (gltf) => {
-                player = gltf.scene;
-                player.visible = false; // ১ম পারসন ভিউতে মানুষটি লুকানো থাকবে
-                scene.add(player);
-            });
+        <div id="view-blood" class="view-content hidden" style="padding:15px;">
+            <h3>Blood Donors</h3>
+            <div style="display:flex; gap:10px; margin: 10px 0; overflow-x:auto;">
+                <select id="blood-filter" onchange="loadBloodBank()" style="width:auto; margin:0;">
+                    <option value="All">All Groups</option>
+                    <option value="A+">A+</option><option value="A-">A-</option>
+                    <option value="B+">B+</option><option value="B-">B-</option>
+                    <option value="O+">O+</option><option value="O-">O-</option>
+                    <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                </select>
+            </div>
+            <div id="blood-list"></div>
+        </div>
 
-            controls = new PointerLockControls(camera, document.body);
-            document.addEventListener('click', () => controls.lock());
+        <div id="view-events" class="view-content hidden" style="padding:15px;">
+             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3>Upcoming Events</h3>
+                <button class="btn btn-sm btn-secondary" onclick="openModal('add-event-modal')">Add Event</button>
+            </div>
+            <div id="events-list"></div>
+        </div>
 
-            window.addEventListener('keydown', (e) => handleKey(e.code, true));
-            window.addEventListener('keyup', (e) => handleKey(e.code, false));
-            
-            animate();
-        }
+        <div id="view-transport" class="view-content hidden" style="padding:15px;">
+            <h3>Bus Schedule</h3>
+            <div class="card">
+                <h4>Route 1: City to Campus</h4>
+                <div class="info-row"><div class="info-icon"><i class="fas fa-clock"></i></div><span>08:00 AM - New Market</span></div>
+                <div class="info-row"><div class="info-icon"><i class="fas fa-clock"></i></div><span>08:15 AM - GEC Circle</span></div>
+                <div class="info-row"><div class="info-icon"><i class="fas fa-clock"></i></div><span>08:30 AM - Muradpur</span></div>
+            </div>
+            <div class="card">
+                <h4>Route 2: Campus to City</h4>
+                <div class="info-row"><div class="info-icon"><i class="fas fa-clock"></i></div><span>02:00 PM - Campus Gate</span></div>
+                <div class="info-row"><div class="info-icon"><i class="fas fa-clock"></i></div><span>04:30 PM - Campus Gate</span></div>
+            </div>
+        </div>
 
-        function handleKey(code, isPressed) {
-            switch (code) {
-                case 'KeyW': moveForward = isPressed; break;
-                case 'KeyS': moveBackward = isPressed; break;
-                case 'KeyA': moveLeft = isPressed; break;
-                case 'KeyD': moveRight = isPressed; break;
-                case 'KeyF': if(isPressed) toggleDrive(); break;
-            }
-        }
+        <!-- Admin View -->
+        <div id="view-admin" class="view-content hidden" style="padding: 15px;">
+            <h3 style="margin-bottom: 15px; color: var(--accent);">Admin Dashboard</h3>
+            <div class="card">
+                <h4>Manage Users</h4>
+                <div id="admin-user-list"></div>
+            </div>
+        </div>
 
-        function toggleDrive() {
-            if (!rickshaw) return;
-            const distance = camera.position.distanceTo(rickshaw.position);
-
-            if (!isDriving && distance < 8) {
-                // রিকশায় উঠা
-                isDriving = true;
-                player.visible = true;
-                rickshaw.add(player); // রিকশার চাইল্ড হিসেবে প্লেয়ারকে যোগ করা
-                player.position.set(0, 0.5, 0.2); // সিটে বসার পজিশন (চেক করে ঠিক করবেন)
+        <!-- Profile View -->
+        <div id="view-profile" class="view-content hidden" style="background: #f0f2f5;">
+            <div class="profile-container">
+                <div class="cover-photo"></div>
                 
-                rickshaw.add(camera); // ক্যামেরাও রিকশার সাথে ঘুরবে
-                camera.position.set(0, 1.8, 0); 
-            } else if (isDriving) {
-                // রিকশা থেকে নামা
-                isDriving = false;
-                player.visible = false;
-                scene.add(camera);
-                scene.add(player);
-                camera.position.y = 1.6;
+                <div class="profile-pic-wrapper" id="profile-pic-container">
+                    <img id="my-profile-img" src="" class="hidden">
+                    <i id="my-profile-icon" class="fas fa-user"></i>
+                    <i id="edit-pic-icon" class="fas fa-camera hidden" style="position: absolute; bottom: 10px; right: 25px; color: var(--text-dark); background: #e4e6eb; padding: 6px; border-radius: 50%; font-size: 1rem;"></i>
+                </div>
+                <input type="file" id="profile-pic-input" accept="image/*" class="hidden" onchange="uploadProfilePic(this)">
+
+                <div class="profile-main-info">
+                    <h2 id="profile-name" class="profile-name">User Name</h2>
+                    <p id="profile-bio-text" class="profile-bio">Bio</p>
+                    
+                    <div id="profile-actions" style="display: flex; gap: 10px; justify-content: center; margin-bottom: 10px;">
+                        </div>
+                </div>
+            </div>
+
+            <div class="profile-details-section">
+                <div class="card detail-card">
+                    <h4>Personal Info</h4>
+                    <div class="info-row"><div class="info-icon"><i class="fas fa-envelope"></i></div><span id="p-email"></span></div>
+                    <div class="info-row"><div class="info-icon"><i class="fas fa-tint" style="color:red;"></i></div><span id="p-blood">Not Set</span></div>
+                    <div class="info-row"><div class="info-icon"><i class="fas fa-phone"></i></div><span id="p-phone">Not added</span></div>
+                    <div class="info-row"><div class="info-icon"><i class="fas fa-map-marker-alt"></i></div><span id="p-location">Bangladesh</span></div>
+                    <div class="info-row"><div class="info-icon"><i class="fab fa-linkedin"></i></div><span id="p-linkedin">Not added</span></div>
+                </div>
+                <div class="card detail-card">
+                    <h4>Education</h4>
+                    <div class="info-row"><div class="info-icon"><i class="fas fa-university"></i></div><span id="p-inst">BGC Trust University</span></div>
+                    <div class="info-row"><div class="info-icon"><i class="fas fa-graduation-cap"></i></div><span id="p-dept"></span></div>
+                    <div class="info-row"><div class="info-icon"><i class="fas fa-clock"></i></div><span id="p-session"></span></div>
+                    <div class="info-row"><div class="info-icon"><i class="fas fa-star"></i></div><span id="p-cgpa">CGPA: --</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="fab-post" class="fab" onclick="openModal('post-modal')">
+            <i class="fas fa-plus"></i>
+        </div>
+
+        <!-- Modals -->
+        <div id="post-modal" class="modal hidden">
+            <div class="modal-content">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3>Create Post</h3>
+                    <i class="fas fa-times" onclick="closeModal('post-modal')" style="cursor:pointer; font-size:1.2rem;"></i>
+                </div>
+                <!-- 1. Text -->
+                <textarea id="post-text" rows="4" placeholder="What's on your mind?" style="border:none; background:transparent; font-size:1.1rem; padding:0; resize:none;"></textarea>
+                
+                <!-- 2. Video Link -->
+                <div style="background: #f0f2f5; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                    <label style="font-size:0.8rem; font-weight:600; color:#555;">Video Link (YouTube / Facebook)</label>
+                    <input type="text" id="post-video-link" placeholder="Paste link here..." style="margin-bottom:0; background:white; border:1px solid #ddd;">
+                </div>
+
+                <!-- 3. Images -->
+                <div style="border: 1px solid #ddd; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                    <label for="post-images" style="cursor: pointer; display: flex; align-items: center; gap: 10px; color: var(--primary);">
+                        <i class="fas fa-images" style="font-size: 1.5rem;"></i>
+                        <span>Add Photos (Multiple)</span>
+                    </label>
+                    <input type="file" id="post-images" accept="image/*" multiple class="hidden">
+                </div>
+                
+                <select id="post-type" style="padding: 5px; font-size: 0.85rem; width: auto; margin-bottom: 10px;">
+                    <option value="social">Public Feed</option>
+                    <option value="notice" id="opt-notice" class="hidden">Department Notice</option>
+                </select>
+
+                <button class="btn btn-primary" onclick="submitPost()">Post</button>
+            </div>
+        </div>
+
+        <div id="add-note-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Upload Material</h3>
+                <input type="text" id="note-title" placeholder="Topic / File Name" required>
+                <input type="text" id="note-link" placeholder="Paste Link (Drive, PDF, YouTube or Image URL)" required>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-secondary" onclick="closeModal('add-note-modal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitNote()">Share</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="add-exam-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Schedule Exam</h3>
+                <input type="text" id="exam-sub" placeholder="Subject Name" required>
+                <div style="display:flex; gap:10px;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.8rem">Start Date & Time</label>
+                        <input type="datetime-local" id="exam-start" required>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px;">
+                     <div style="flex:1;">
+                        <label style="font-size:0.8rem">End Date & Time</label>
+                        <input type="datetime-local" id="exam-end" required>
+                    </div>
+                </div>
+                <input type="text" id="exam-room" placeholder="Room Number">
+                <input type="text" id="exam-link" placeholder="Attachment (PDF / Image Link)">
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-secondary" onclick="closeModal('add-exam-modal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitExam()">Schedule</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="add-routine-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Update Routine</h3>
+                <select id="routine-day">
+                    <option value="Sunday">Sunday</option>
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                </select>
+                <input type="text" id="routine-text" placeholder="e.g. 10:00 AM - Bangla (Room 203)" required>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-secondary" onclick="closeModal('add-routine-modal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitRoutine()">Add Class</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="add-book-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Sell / Donate Book</h3>
+                <input type="text" id="book-title" placeholder="Book Name" required>
+                <input type="text" id="book-price" placeholder="Price (or write 'Free')" required>
+                <input type="text" id="book-contact" placeholder="Contact Info (Phone/Room)" required>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-secondary" onclick="closeModal('add-book-modal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitBook()">List Book</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="add-event-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Create Event</h3>
+                <input type="text" id="event-title" placeholder="Event Title" required>
+                <input type="date" id="event-date" required>
+                <textarea id="event-desc" placeholder="Details"></textarea>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-secondary" onclick="closeModal('add-event-modal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitEvent()">Create</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="edit-profile-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Update Profile Info</h3>
+                <hr style="margin: 10px 0;">
+                <label><small>Blood Group</small></label>
+                <select id="edit-blood">
+                    <option value="">Select</option>
+                    <option value="A+">A+</option><option value="A-">A-</option>
+                    <option value="B+">B+</option><option value="B-">B-</option>
+                    <option value="O+">O+</option><option value="O-">O-</option>
+                    <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                </select>
+                <label><small>Phone</small></label>
+                <input type="text" id="edit-phone" placeholder="017...">
+                <label><small>LinkedIn Link</small></label>
+                <input type="text" id="edit-linkedin" placeholder="linkedin.com/in/...">
+                <label><small>Location</small></label>
+                <input type="text" id="edit-loc" placeholder="City, Country">
+                <label><small>CGPA / Result</small></label>
+                <input type="text" id="edit-cgpa" placeholder="Current CGPA">
+                <label><small>Bio</small></label>
+                <textarea id="edit-bio" rows="2" placeholder="Your short bio"></textarea>
+
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button class="btn btn-secondary" onclick="closeModal('edit-profile-modal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveProfileDetails()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="chat-window" class="hidden">
+            <div class="chat-header" style="padding:10px; display:flex; align-items:center; border-bottom:1px solid #ddd;">
+                <i class="fas fa-arrow-left" onclick="closeChatWindow()" style="font-size: 1.2rem; margin-right: 15px; color: var(--primary);"></i>
+                <h4 id="chat-header-name">Chat</h4>
+            </div>
+            <div id="chat-messages" class="chat-messages"></div>
+            <div class="chat-input-area">
+                <input type="text" id="msg-input" placeholder="Type a message..." style="margin-bottom:0; border-radius:20px;">
+                <i class="fas fa-paper-plane" style="color: var(--primary); font-size: 1.5rem; cursor: pointer; align-self: center;" onclick="sendMessage()"></i>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav>
+            <button class="nav-item active" onclick="switchView('home', this)"><i class="fas fa-home"></i></button>
+            <button class="nav-item" onclick="switchView('dept', this)"><i class="fas fa-university"></i></button>
+            <button class="nav-item" onclick="switchView('chat', this)"><i class="fas fa-comment-alt"></i></button>
+            <button class="nav-item" onclick="switchView('more', this)"><i class="fas fa-bars"></i></button>
+        </nav>
+
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getDatabase, ref, set, push, onValue, remove, update, get, onChildAdded } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCOuYUqDgdRk0n4KZXVCIn1Nlh2TO10-I8", 
+        authDomain: "bgc-campus.firebaseapp.com",
+        databaseURL: "https://bgc-campus-default-rtdb.firebaseio.com",
+        projectId: "bgc-campus",
+        storageBucket: "bgc-campus.firebasestorage.app",
+        messagingSenderId: "318178229172",
+        appId: "1:318178229172:web:ff2a519ee31219ddd4d0e1"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    let currentUser = null;
+    const ADMIN_EMAIL = "habiburrahmanmahi4@gmail.com";
+    let friendList = {};
+    let currentChatUid = null;
+    
+    // Notification Logic Variables
+    const loadTime = Date.now();
+    let notificationAllowed = false;
+
+    // --- Helpers ---
+    window.openModal = (id) => document.getElementById(id).classList.remove('hidden');
+    window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
+
+    // Enhanced Media Renderer for Feed
+    function embedVideo(link) {
+        if(!link) return '';
+        let html = '';
+        const ytPattern = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        const ytMatch = link.match(ytPattern);
+        const fbPattern = /facebook\.com|fb\.watch/;
+        
+        if(ytMatch) {
+            html += `<div class="media-embed"><iframe width="100%" height="250" src="https://www.youtube.com/embed/${ytMatch[1]}" frameborder="0" allowfullscreen></iframe></div>`;
+        } else if(fbPattern.test(link)) {
+            let encodedUrl = encodeURIComponent(link);
+            html += `<div class="media-embed"><iframe src="https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=false&width=500" width="100%" height="250" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowfullscreen="true" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"></iframe></div>`;
+        }
+        return html;
+    }
+
+    function renderImageGrid(imagesArray) {
+        if(!imagesArray || imagesArray.length === 0) return '';
+        let gridClass = 'grid-1';
+        if(imagesArray.length === 2) gridClass = 'grid-2';
+        else if(imagesArray.length === 3) gridClass = 'grid-3';
+        else if(imagesArray.length >= 4) gridClass = 'grid-4';
+        let html = `<div class="img-grid ${gridClass}">`;
+        imagesArray.slice(0, 4).forEach((img) => { html += `<img src="${img}" onclick="viewImageFull('${img}')">`; });
+        html += `</div>`;
+        return html;
+    }
+    window.viewImageFull = (src) => window.open(src, '_blank');
+
+    // --- Auth Logic & Main Load ---
+    window.toggleAuth = (mode) => {
+        document.getElementById('login-form').classList.toggle('hidden', mode === 'signup');
+        document.getElementById('signup-form').classList.toggle('hidden', mode === 'login');
+    };
+
+    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const email = document.getElementById('sup-email').value;
+            const cred = await createUserWithEmailAndPassword(auth, email, document.getElementById('sup-pass').value);
+            const role = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 'Admin' : 'Student';
+            await set(ref(db, 'users/' + cred.user.uid), {
+                uid: cred.user.uid,
+                name: document.getElementById('sup-name').value,
+                email: email,
+                dept: document.getElementById('sup-dept').value,
+                hsc_year: document.getElementById('sup-year').value,
+                role: role,
+                profile_pic: ""
+            });
+            alert('Welcome!');
+        } catch (err) { alert(err.message); }
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try { await signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-pass').value); }
+        catch (err) { alert("Login failed: " + err.message); }
+    });
+
+    window.logout = () => signOut(auth).then(() => location.reload());
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            onValue(ref(db, 'users/' + user.uid), (snap) => {
+                currentUser = { ...snap.val(), uid: user.uid };
+                if(currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() && currentUser.role !== 'Admin') {
+                    update(ref(db, 'users/' + user.uid), { role: 'Admin' });
+                }
+                loadApp();
+                initNotifications(); // Start Notifications
+            });
+            document.getElementById('view-auth').classList.add('hidden');
+            document.getElementById('main-interface').classList.remove('hidden');
+        } else {
+            document.getElementById('view-auth').classList.remove('hidden');
+            document.getElementById('main-interface').classList.add('hidden');
+        }
+    });
+
+    // --- Notification System ---
+    function initNotifications() {
+        if ("Notification" in window) {
+            if (Notification.permission === "granted") notificationAllowed = true;
+            else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") notificationAllowed = true;
+                });
+            }
+        }
+        startNotificationListeners();
+    }
+
+    function showPushNotification(title, body) {
+        if (notificationAllowed && document.hidden) {
+            new Notification(title, {
+                body: body,
+                icon: 'https://cdn-icons-png.flaticon.com/512/2995/2995458.png',
+                vibrate: [200, 100, 200]
+            });
+        }
+    }
+
+    function startNotificationListeners() {
+        // 1. New Posts
+        onChildAdded(ref(db, 'posts'), (snapshot) => {
+            const data = snapshot.val();
+            if (data.timestamp > loadTime && data.author_uid !== currentUser.uid) {
+                const type = data.type === 'notice' ? '📢 New Department Notice' : '📝 New Post';
+                showPushNotification(type, `${data.author_name}: ${data.text.substring(0, 30)}...`);
+            }
+        });
+
+        // 2. New Messages (Check conversations involving current user)
+        onChildAdded(ref(db, 'messages'), (snapshot) => {
+            const key = snapshot.key; // format: uid_uid
+            if(key.includes(currentUser.uid)) {
+                // Listen for new messages in this conversation
+                onChildAdded(snapshot.ref, (msgSnap) => {
+                    const msg = msgSnap.val();
+                    if(msg.timestamp > loadTime && msg.sender !== currentUser.uid) {
+                         showPushNotification("💬 New Message", msg.text);
+                    }
+                });
+            }
+        });
+
+        // 3. Department Updates (Generic Listener for current User Dept)
+        const userDept = currentUser.dept.replace(/\s+/g, '_');
+        ['dept_notes', 'dept_exams', 'dept_routine'].forEach(cat => {
+            const path = `${cat}/${userDept}`;
+            onChildAdded(ref(db, path), (itemSnap) => {
+                // For exams/notes, sometimes there is no timestamp field in old data, 
+                // but since we use child_added on a live connection, it triggers on new adds.
+                // We check basic timestamp if available or rely on the event triggering after load.
+                const item = itemSnap.val();
+                if(item.timestamp && item.timestamp > loadTime) {
+                     let title = "🎓 Department Update";
+                     if(cat.includes('notes')) title = "📘 New Note Shared";
+                     if(cat.includes('exams')) title = "📅 Exam Scheduled";
+                     if(cat.includes('routine')) title = "⏰ Routine Updated";
+                     showPushNotification(title, "Check your department dashboard.");
+                }
+            });
+        });
+    }
+
+    // --- Core Logic ---
+    function loadApp() {
+        if(currentUser.role === 'Admin') {
+            document.getElementById('menu-admin-btn').classList.remove('hidden');
+            loadAdminPanel();
+        } else {
+            document.getElementById('menu-admin-btn').classList.add('hidden');
+        }
+
+        const allowedRoles = ['Admin', 'Teacher', 'Moderator'];
+        if(allowedRoles.includes(currentUser.role)) {
+            document.getElementById('opt-notice').classList.remove('hidden');
+            document.getElementById('dept-admin-controls').classList.remove('hidden');
+        } else {
+            document.getElementById('opt-notice').classList.add('hidden');
+            document.getElementById('dept-admin-controls').classList.add('hidden');
+        }
+        
+        document.getElementById('my-dept-name').innerText = (currentUser.dept || "General") + " Department";
+        switchDeptTab('notices');
+        loadPosts();
+        loadFriends();
+    }
+
+    window.switchView = (viewName, btn) => {
+        document.querySelectorAll('.view-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById('view-' + viewName).classList.remove('hidden');
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+
+        if(viewName === 'market') loadMarket();
+        if(viewName === 'blood') loadBloodBank();
+        if(viewName === 'events') loadEvents();
+
+        const fab = document.getElementById('fab-post');
+        if(['profile','chat','dept','admin','market','blood','events','transport','more'].includes(viewName)) fab.classList.add('hidden');
+        else fab.classList.remove('hidden');
+    };
+
+    // --- PROFILE LOGIC ---
+    window.viewMyProfile = () => { renderProfileView(currentUser); switchView('profile'); };
+
+    window.viewUserProfile = (uid) => {
+        onValue(ref(db, 'users/' + uid), (snap) => {
+            const user = snap.val();
+            if(user) { renderProfileView(user); switchView('profile'); }
+        }, { onlyOnce: true });
+    };
+
+    function renderProfileView(user) {
+        const isMe = (user.uid === currentUser.uid);
+        const ext = user.extended_info || {};
+
+        document.getElementById('profile-name').innerText = user.name;
+        document.getElementById('profile-bio-text').innerText = ext.bio || "Where Vision Becomes Infinite";
+        document.getElementById('p-email').innerText = user.email;
+        document.getElementById('p-dept').innerText = `${user.dept} | ${user.role}`;
+        document.getElementById('p-session').innerText = `Session: ${user.hsc_year}`;
+        document.getElementById('p-blood').innerText = ext.blood || "Not Set";
+        document.getElementById('p-phone').innerText = ext.phone || "Not added";
+        document.getElementById('p-location').innerText = ext.location || "Bangladesh";
+        document.getElementById('p-linkedin').innerText = ext.linkedin || "Not added";
+        document.getElementById('p-cgpa').innerText = `CGPA: ${ext.cgpa || "--"}`;
+
+        const imgEl = document.getElementById('my-profile-img');
+        const iconEl = document.getElementById('my-profile-icon');
+        if (user.profile_pic) {
+            imgEl.src = user.profile_pic; imgEl.classList.remove('hidden'); iconEl.classList.add('hidden');
+        } else {
+            imgEl.classList.add('hidden'); iconEl.classList.remove('hidden');
+        }
+
+        const actionsDiv = document.getElementById('profile-actions');
+        const editIcon = document.getElementById('edit-pic-icon');
+        const picContainer = document.getElementById('profile-pic-container');
+        actionsDiv.innerHTML = ''; 
+
+        if (isMe) {
+            actionsDiv.innerHTML = `
+                <button class="btn btn-primary btn-sm" onclick="openModal('edit-profile-modal')"><i class="fas fa-pen"></i> Update Info</button>
+                <button class="btn btn-secondary btn-sm" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            `;
+            editIcon.classList.remove('hidden');
+            picContainer.onclick = () => document.getElementById('profile-pic-input').click();
+        } else {
+            actionsDiv.innerHTML = `
+                <button class="btn btn-primary btn-sm" onclick="startChat('${user.uid}', '${user.name}')"><i class="fas fa-comment"></i> Message</button>
+            `;
+            editIcon.classList.add('hidden');
+            picContainer.onclick = null;
+        }
+    }
+
+    // --- Admin Panel ---
+    function loadAdminPanel() {
+        onValue(ref(db, 'users'), (snap) => {
+            const list = document.getElementById('admin-user-list');
+            list.innerHTML = '';
+            const users = snap.val() || {};
+            Object.values(users).forEach(u => {
+                if(u.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) return;
+                let btns = (u.role === 'Student') ? 
+                    `<button class="btn-sm btn-primary" onclick="setUserRole('${u.uid}', 'Teacher')">Make Teacher</button><button class="btn-sm btn-secondary" onclick="setUserRole('${u.uid}', 'Moderator')">Make Moderator</button>` : 
+                    `<button class="btn-sm btn-danger" onclick="setUserRole('${u.uid}', 'Student')">Demote to Student</button>`;
+                list.innerHTML += `<div class="user-list-item"><div class="user-list-info"><b>${u.name}</b><span>${u.email}</span><br><span class="badge badge-${u.role}">${u.role}</span></div><div style="display:flex; flex-direction:column; gap:5px;">${btns}</div></div>`;
+            });
+        });
+    }
+
+    window.setUserRole = (uid, role) => { if(confirm(`Change role to ${role}?`)) update(ref(db, 'users/' + uid), { role: role }); }
+
+    // --- Department Section ---
+    window.switchDeptTab = (tabName, btnElement) => {
+        if(btnElement) {
+            document.querySelectorAll('.dept-tab').forEach(el => el.classList.remove('active'));
+            btnElement.classList.add('active');
+        }
+        
+        const area = document.getElementById('dept-content-area');
+        area.innerHTML = '<div style="text-align:center; margin-top:20px; color:#777;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+        const userDept = currentUser.dept || "General";
+        const deptKey = userDept.replace(/\s+/g, '_');
+
+        if(tabName === 'notices') {
+            onValue(ref(db, 'posts'), (snap) => {
+                const data = snap.val();
+                area.innerHTML = '';
+                if(!data) { area.innerHTML = '<p class="text-center">No notices.</p>'; return; }
+                let count = 0;
+                Object.entries(data).reverse().forEach(([pid, post]) => {
+                    if(post.type === 'notice') { area.appendChild(createPostCard(pid, post)); count++; }
+                });
+                if(count === 0) area.innerHTML = '<div style="text-align:center; padding:20px;">No Recent Notices</div>';
+            });
+        } 
+        else if (tabName === 'notes') {
+            onValue(ref(db, `dept_notes/${deptKey}`), (snap) => {
+                area.innerHTML = '';
+                const notes = snap.val();
+                if(!notes) { area.innerHTML = '<p style="text-align:center; padding:15px;">No notes shared yet.</p>'; return; }
+                Object.entries(notes).reverse().forEach(([nid, note]) => {
+                    const canDel = ['Admin', 'Teacher', 'Moderator'].includes(currentUser.role);
+                    const delBtn = canDel ? `<button class="btn-delete" onclick="deleteItem('dept_notes/${deptKey}/${nid}')"><i class="fas fa-trash"></i></button>` : '';
+                    let embed = (note.link && note.link.includes('pdf')) ? `<div class="media-embed"><iframe src="https://docs.google.com/gview?url=${note.link}&embedded=true" style="width:100%; height:300px;" frameborder="0"></iframe></div>` : `<div style="margin-top:5px;"><a href="${note.link}" target="_blank" class="btn btn-sm btn-secondary">Open Link</a></div>`;
+                    area.innerHTML += `<div class="card">${delBtn}<h4><i class="fas fa-book" style="color:var(--primary);"></i> ${note.title}</h4><p style="font-size:0.85rem; color:#666;">By ${note.author}</p>${embed}</div>`;
+                });
+            });
+        }
+        else if (tabName === 'exams') {
+            onValue(ref(db, `dept_exams/${deptKey}`), (snap) => {
+                area.innerHTML = '';
+                const exams = snap.val();
+                if(!exams) { area.innerHTML = '<p style="text-align:center; padding:15px;">No upcoming exams.</p>'; return; }
+                Object.entries(exams).sort((a,b) => new Date(a[1].start) - new Date(b[1].start)).forEach(([eid, exam]) => {
+                    const canDel = ['Admin', 'Teacher', 'Moderator'].includes(currentUser.role);
+                    const delBtn = canDel ? `<button class="btn-delete" onclick="deleteItem('dept_exams/${deptKey}/${eid}')"><i class="fas fa-trash"></i></button>` : '';
+                    area.innerHTML += `<div class="card" style="border-left: 5px solid var(--accent);">${delBtn}<h4>${exam.subject}</h4><p><i class="fas fa-clock"></i> <b>Start:</b> ${new Date(exam.start).toLocaleString()}</p><p><i class="fas fa-history"></i> <b>End:</b> ${new Date(exam.end).toLocaleString()}</p><p><i class="fas fa-map-marker-alt"></i> Room: ${exam.room}</p></div>`;
+                });
+            });
+        }
+        else if (tabName === 'routine') {
+            onValue(ref(db, `dept_routine/${deptKey}`), (snap) => {
+                area.innerHTML = '';
+                const routine = snap.val();
+                if(!routine) { area.innerHTML = '<p style="text-align:center; padding:15px;">No routine added.</p>'; return; }
+                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+                let html = '';
+                days.forEach(day => {
+                    if(routine[day]) {
+                        html += `<div class="card"><h4>${day}</h4><table class="routine-table"><tr><th>Class Details</th></tr>`;
+                        Object.values(routine[day]).forEach(item => { html += `<tr><td>${item.text}</td></tr>`; });
+                        html += `</table></div>`;
+                    }
+                });
+                area.innerHTML = html;
+            });
+        }
+    };
+
+    // --- Market, Blood, Events ---
+    window.loadMarket = () => {
+        onValue(ref(db, 'marketplace'), (snap) => {
+            const list = document.getElementById('market-list');
+            list.innerHTML = '';
+            const books = snap.val();
+            if(!books) { list.innerHTML = '<p>No books available.</p>'; return; }
+            Object.values(books).reverse().forEach(book => {
+                list.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><div><h4>${book.title}</h4><div class="book-price">${book.price}</div><small>Seller: ${book.seller_name}</small></div><button class="btn-sm btn-secondary" onclick="startChat('${book.seller_uid}','${book.seller_name}')">Contact</button></div>`;
+            });
+        });
+    };
+    window.submitBook = () => {
+        const title = document.getElementById('book-title').value;
+        const price = document.getElementById('book-price').value;
+        if(!title) return;
+        push(ref(db, 'marketplace'), { title, price, seller_name: currentUser.name, seller_uid: currentUser.uid, timestamp: Date.now() });
+        closeModal('add-book-modal');
+        document.getElementById('book-title').value = '';
+    };
+
+    window.loadBloodBank = () => {
+        const group = document.getElementById('blood-filter').value;
+        onValue(ref(db, 'users'), (snap) => {
+            const list = document.getElementById('blood-list');
+            list.innerHTML = '';
+            const users = snap.val();
+            Object.values(users).forEach(u => {
+                const uBg = u.extended_info?.blood;
+                if(uBg && (group === 'All' || uBg === group)) {
+                    list.innerHTML += `<div class="card" style="display:flex; justify-content:space-between; align-items:center;"><div style="display:flex; align-items:center; gap:10px;"><div class="avatar">${uBg}</div><div><b>${u.name}</b><br><small>${u.extended_info.location || ''}</small></div></div><button class="btn-sm btn-primary" onclick="startChat('${u.uid}','${u.name}')">Msg</button></div>`;
+                }
+            });
+            if(!list.innerHTML) list.innerHTML = '<p>No donors found.</p>';
+        });
+    };
+
+    window.loadEvents = () => {
+        onValue(ref(db, 'events'), (snap) => {
+            const list = document.getElementById('events-list');
+            list.innerHTML = '';
+            const events = snap.val();
+            if(!events) { list.innerHTML = '<p>No upcoming events.</p>'; return; }
+            Object.values(events).sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(evt => {
+                const d = new Date(evt.date);
+                list.innerHTML += `<div class="card" style="display:flex; align-items:center;"><div class="event-date-box"><div style="font-size:1.2rem;">${d.getDate()}</div><div style="font-size:0.8rem;">${d.toLocaleString('default',{month:'short'})}</div></div><div><h4>${evt.title}</h4><p style="font-size:0.9rem;">${evt.desc}</p></div></div>`;
+            });
+        });
+    };
+    window.submitEvent = () => {
+        const title = document.getElementById('event-title').value;
+        const date = document.getElementById('event-date').value;
+        const desc = document.getElementById('event-desc').value;
+        if(!title || !date) return;
+        push(ref(db, 'events'), { title, date, desc });
+        closeModal('add-event-modal');
+    };
+
+    window.submitRoutine = () => {
+        const day = document.getElementById('routine-day').value;
+        const text = document.getElementById('routine-text').value;
+        if(!text) return;
+        const userDept = currentUser.dept || "General";
+        const deptKey = userDept.replace(/\s+/g, '_');
+        push(ref(db, `dept_routine/${deptKey}/${day}`), { text, timestamp: Date.now() });
+        closeModal('add-routine-modal');
+        document.getElementById('routine-text').value = '';
+        alert("Class Added!");
+    };
+
+    // --- Submissions ---
+    window.submitNote = () => {
+        const title = document.getElementById('note-title').value;
+        const link = document.getElementById('note-link').value;
+        if(!title || !link) return alert("Please fill all fields");
+        const userDept = currentUser.dept || "General";
+        const deptKey = userDept.replace(/\s+/g, '_');
+        push(ref(db, `dept_notes/${deptKey}`), { title, link, author: currentUser.name, timestamp: Date.now() }).then(() => {
+            closeModal('add-note-modal'); document.getElementById('note-title').value = ''; document.getElementById('note-link').value = ''; alert("Note Uploaded!");
+        });
+    };
+
+    window.submitExam = () => {
+        const sub = document.getElementById('exam-sub').value;
+        const start = document.getElementById('exam-start').value;
+        const end = document.getElementById('exam-end').value;
+        const room = document.getElementById('exam-room').value;
+        const link = document.getElementById('exam-link').value;
+        if(!sub || !start || !end) return alert("Subject, Start & End required");
+        const userDept = currentUser.dept || "General";
+        const deptKey = userDept.replace(/\s+/g, '_');
+        push(ref(db, `dept_exams/${deptKey}`), { subject: sub, start, end, room: room || 'TBA', link: link || '', timestamp: Date.now() }).then(() => closeModal('add-exam-modal'));
+    };
+
+    window.deleteItem = (path) => { if(confirm("Delete this?")) remove(ref(db, path)); };
+
+    // --- Post Logic ---
+    window.submitPost = async () => {
+        const text = document.getElementById('post-text').value;
+        const videoLink = document.getElementById('post-video-link').value.trim();
+        const type = document.getElementById('post-type').value;
+        const fileInput = document.getElementById('post-images');
+        
+        if(!text && !videoLink && fileInput.files.length === 0) return alert("Write something, add a video link or add a photo!");
+
+        let imagesArray = [];
+        if(fileInput.files.length > 0) {
+            for(let i=0; i<fileInput.files.length; i++) {
+                const base64 = await compressImage(fileInput.files[i]);
+                imagesArray.push(base64);
             }
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = performance.now();
-            const delta = (time - prevTime) / 1000;
+        push(ref(db, 'posts'), {
+            text, video_link: videoLink, images: imagesArray, type,
+            author_uid: currentUser.uid, author_name: currentUser.name, author_role: currentUser.role, author_pic: currentUser.profile_pic || "",
+            timestamp: Date.now(), likes: {}, comments: {} 
+        });
+        document.getElementById('post-text').value = ''; document.getElementById('post-video-link').value = ''; document.getElementById('post-images').value = '';
+        closeModal('post-modal');
+    }
 
-            if (controls.isLocked) {
-                if (!isDriving) {
-                    // সাধারণ হাঁটাচলা (First Person)
-                    velocity.x -= velocity.x * 10.0 * delta;
-                    velocity.z -= velocity.z * 10.0 * delta;
+    function loadPosts() {
+        onValue(ref(db, 'posts'), (snap) => {
+            const div = document.getElementById('view-home');
+            div.innerHTML = '';
+            const data = snap.val();
+            if(!data) { div.innerHTML = "<p style='text-align:center; padding:20px; color:#777;'>No posts yet.</p>"; return; }
+            Object.entries(data).reverse().forEach(([pid, post]) => {
+                if(post.type === 'social') div.appendChild(createPostCard(pid, post));
+            });
+        });
+    }
 
-                    direction.z = Number(moveForward) - Number(moveBackward);
-                    direction.x = Number(moveRight) - Number(moveLeft);
-                    direction.normalize();
+    function createPostCard(pid, post) {
+        const el = document.createElement('div');
+        el.className = 'card';
+        const picHtml = post.author_pic ? `<img src="${post.author_pic}">` : post.author_name[0];
+        let delBtn = (currentUser.role === 'Admin' || currentUser.role === 'Moderator' || post.author_uid === currentUser.uid) ? `<button class="btn-delete" onclick="deleteItem('posts/${pid}')"><i class="fas fa-trash"></i></button>` : '';
+        const videoContent = embedVideo(post.video_link);
+        const imageContent = renderImageGrid(post.images || []);
+        const displayRole = (post.author_role && post.author_role !== 'Student') ? `<span class="badge badge-${post.author_role}">${post.author_role}</span>` : '';
+        const likeCount = post.likes ? Object.keys(post.likes).length : 0;
+        const commentCount = post.comments ? Object.keys(post.comments).length : 0;
+        const isLiked = post.likes && post.likes[currentUser.uid];
 
-                    if (moveForward || moveBackward) velocity.z -= direction.z * 100.0 * delta;
-                    if (moveLeft || moveRight) velocity.x -= direction.x * 100.0 * delta;
+        let commentsHtml = '';
+        if(post.comments) {
+            Object.values(post.comments).forEach(c => {
+                commentsHtml += `<div class="comment-item"><div class="avatar" style="width:25px;height:25px;font-size:0.7rem;">${c.author[0]}</div><div class="comment-bubble"><b>${c.author}</b> ${c.text}</div></div>`;
+            });
+        }
 
-                    controls.moveRight(-velocity.x * delta);
-                    controls.moveForward(-velocity.z * delta);
-                } else {
-                    // রিকশা চালানো
-                    const driveSpeed = 20 * delta;
-                    const rotateSpeed = 1.5 * delta;
+        el.innerHTML = `${delBtn}<div class="post-header"><div class="avatar" onclick="viewUserProfile('${post.author_uid}')">${picHtml}</div><div class="post-meta"><div class="author-name" onclick="viewUserProfile('${post.author_uid}')">${post.author_name} ${displayRole}</div><small>${new Date(post.timestamp).toLocaleDateString()} at ${new Date(post.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small></div></div><p style="white-space: pre-wrap; margin-bottom:5px;">${post.text}</p>${videoContent}${imageContent}<div class="post-stats"><span><i class="fas fa-thumbs-up" style="color:var(--primary);"></i> ${likeCount} Likes</span><span onclick="toggleCommentSection('${pid}')" style="cursor:pointer;">${commentCount} Comments</span></div><div class="post-actions"><button class="action-btn ${isLiked ? 'liked' : ''}" onclick="toggleLike('${pid}')"><i class="${isLiked ? 'fas' : 'far'} fa-thumbs-up"></i> Like</button><button class="action-btn" onclick="toggleCommentSection('${pid}')"><i class="far fa-comment"></i> Comment</button></div><div id="comment-sec-${pid}" class="comment-section hidden"><div style="max-height:200px; overflow-y:auto; margin-bottom:5px;">${commentsHtml}</div><div class="comment-input-area"><input type="text" id="comment-in-${pid}" placeholder="Write a comment..." style="margin:0; border-radius:20px; padding:8px 12px;"><button class="btn btn-primary" style="width:auto; border-radius:50%; padding:10px;" onclick="submitComment('${pid}')"><i class="fas fa-paper-plane"></i></button></div></div>`;
+        return el;
+    }
 
-                    if (moveForward) rickshaw.translateZ(driveSpeed);
-                    if (moveBackward) rickshaw.translateZ(-driveSpeed);
-                    if (moveLeft) rickshaw.rotation.y += rotateSpeed;
-                    if (moveRight) rickshaw.rotation.y -= rotateSpeed;
+    window.toggleLike = (pid) => {
+        const path = `posts/${pid}/likes/${currentUser.uid}`;
+        get(ref(db, path)).then(snap => { if(snap.exists()) remove(ref(db, path)); else set(ref(db, path), true); });
+    }
+
+    window.toggleCommentSection = (pid) => document.getElementById(`comment-sec-${pid}`).classList.toggle('hidden');
+
+    window.submitComment = (pid) => {
+        const input = document.getElementById(`comment-in-${pid}`);
+        const text = input.value.trim();
+        if(!text) return;
+        push(ref(db, `posts/${pid}/comments`), { text: text, author: currentUser.name, uid: currentUser.uid, time: Date.now() });
+        input.value = '';
+    }
+
+    // --- Profile Utils ---
+    window.openEditProfileModal = () => {
+        const ext = currentUser.extended_info || {};
+        document.getElementById('edit-phone').value = ext.phone || '';
+        document.getElementById('edit-linkedin').value = ext.linkedin || '';
+        document.getElementById('edit-loc').value = ext.location || '';
+        document.getElementById('edit-cgpa').value = ext.cgpa || '';
+        document.getElementById('edit-bio').value = ext.bio || '';
+        document.getElementById('edit-blood').value = ext.blood || '';
+        openModal('edit-profile-modal');
+    };
+
+    window.saveProfileDetails = async () => {
+        const data = {
+            phone: document.getElementById('edit-phone').value,
+            linkedin: document.getElementById('edit-linkedin').value,
+            location: document.getElementById('edit-loc').value,
+            cgpa: document.getElementById('edit-cgpa').value,
+            bio: document.getElementById('edit-bio').value,
+            blood: document.getElementById('edit-blood').value
+        };
+        await update(ref(db, 'users/' + currentUser.uid + '/extended_info'), data);
+        closeModal('edit-profile-modal');
+        renderProfileView({...currentUser, extended_info: data});
+    };
+
+    const compressImage = (file) => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const scale = 800 / img.width; 
+                    canvas.width = 800;
+                    canvas.height = img.height * scale;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
                 }
             }
-
-            prevTime = time;
-            renderer.render(scene, camera);
-        }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
         });
-    </script>
+    };
+
+    window.uploadProfilePic = async (input) => {
+        if(input.files[0]) {
+            const base64 = await compressImage(input.files[0]);
+            await update(ref(db, 'users/' + currentUser.uid), { profile_pic: base64 });
+        }
+    }
+
+    // --- Chat & Friends ---
+    function loadFriends() {
+        onValue(ref(db, `friends/${currentUser.uid}`), (snap) => friendList = snap.val() || {});
+        onValue(ref(db, 'users'), (snap) => window.allUsers = snap.val());
+    }
+
+    window.showChatTab = (tab) => {
+        const div = document.getElementById('chat-content');
+        div.innerHTML = '';
+        if(tab === 'friends') {
+            Object.keys(friendList).forEach(uid => {
+                const u = window.allUsers[uid];
+                if(u) div.innerHTML += `<div class="friend-item" onclick="startChat('${uid}','${u.name}')"><div style="display:flex;align-items:center;"><div class="avatar">${u.name[0]}</div><span style="margin-left:10px;font-weight:600;">${u.name}</span></div><i class="fas fa-comment"></i></div>`;
+            });
+        } else if (tab === 'find') {
+            div.innerHTML = '<input type="text" placeholder="Search students..." onkeyup="searchUser(this.value)"> <div id="search-results"></div>';
+        } else if (tab === 'requests') {
+             onValue(ref(db, `friend_requests/${currentUser.uid}`), (snap) => {
+                const reqs = snap.val();
+                if(!reqs) { div.innerHTML = "<p style='text-align:center;color:#777;'>No requests</p>"; return; }
+                Object.values(reqs).forEach(req => {
+                    div.innerHTML += `<div class="friend-item"><span>${req.name}</span><div style="display:flex; gap:5px;"><button class="btn-sm btn-primary" onclick="acceptReq('${req.uid}', '${req.name}')">Confirm</button><button class="btn-sm btn-secondary" onclick="rejectReq('${req.uid}')">Delete</button></div></div>`;
+                });
+             });
+        }
+    };
+
+    window.searchUser = (val) => {
+        const res = document.getElementById('search-results');
+        res.innerHTML = '';
+        if(val.length < 2) return;
+        Object.values(window.allUsers || {}).forEach(u => {
+            if(u.uid !== currentUser.uid && u.name.toLowerCase().includes(val.toLowerCase())) {
+                res.innerHTML += `<div class="friend-item"><span>${u.name} (${u.dept})</span> <button class="btn-sm btn-primary" onclick="addFriend('${u.uid}')">Add</button></div>`;
+            }
+        });
+    }
+
+    window.addFriend = (uid) => { set(ref(db, `friend_requests/${uid}/${currentUser.uid}`), { name: currentUser.name, uid: currentUser.uid }); alert("Request Sent"); }
+    window.acceptReq = (uid, name) => { set(ref(db, `friends/${currentUser.uid}/${uid}`), true); set(ref(db, `friends/${uid}/${currentUser.uid}`), true); remove(ref(db, `friend_requests/${currentUser.uid}/${uid}`)); showChatTab('friends'); }
+    window.rejectReq = (uid) => { remove(ref(db, `friend_requests/${currentUser.uid}/${uid}`)); showChatTab('requests'); }
+
+    window.startChat = (uid, name) => {
+        currentChatUid = uid;
+        document.getElementById('chat-window').classList.remove('hidden');
+        document.getElementById('chat-header-name').innerText = name;
+        loadMessages(uid);
+    };
+    
+    window.closeChatWindow = () => document.getElementById('chat-window').classList.add('hidden');
+
+    function loadMessages(uid) {
+        const cid = [currentUser.uid, uid].sort().join('_');
+        onValue(ref(db, 'messages/'+cid), snap => {
+            const div = document.getElementById('chat-messages');
+            div.innerHTML = '';
+            const msgs = snap.val();
+            if(msgs) Object.values(msgs).forEach(m => { div.innerHTML += `<div class="message-bubble ${m.sender===currentUser.uid?'msg-me':'msg-them'}">${m.text}</div>`; });
+            div.scrollTop = div.scrollHeight;
+        });
+    }
+
+    window.sendMessage = () => {
+        const txt = document.getElementById('msg-input').value;
+        if(!txt.trim()) return;
+        const cid = [currentUser.uid, currentChatUid].sort().join('_');
+        push(ref(db, 'messages/'+cid), { text: txt, sender: currentUser.uid, timestamp: Date.now() });
+        document.getElementById('msg-input').value = '';
+    }
+
+</script>
 </body>
 </html>
